@@ -5,6 +5,7 @@ library(drc)
 library(ggplot2)
 library(shinyjs)
 library(esmisc)
+library(plotly)
 
 
 # drc models --------------------------------------------------------------

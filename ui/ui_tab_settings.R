@@ -15,7 +15,7 @@ tabPanel(
       uiOutput('group')
     ),
     mainPanel(
-      plotOutput('plot_settings')
+      plotlyOutput('plot_settings')
     )
   )
 )

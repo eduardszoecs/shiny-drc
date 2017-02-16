@@ -12,7 +12,7 @@ tabPanel(
                 '10, 50')
     ),
     mainPanel(
-      plotOutput('model_plot'), 
+      plotlyOutput('model_plot'), 
       verbatimTextOutput(outputId = 'model_summary'),
       verbatimTextOutput(outputId = 'model_ecx')
     )

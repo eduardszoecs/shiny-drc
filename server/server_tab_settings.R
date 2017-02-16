@@ -1,18 +1,20 @@
 # UI Elements -------------------------------------------------------------
 output$conc = renderUI({
   vars <- get_vars()
-  selectInput('conc', 'Concentration', vars)
+  selectInput('conc', 'Concentration', vars, selected = 'conc')
 })
 
 output$y = renderUI({
   vars <- get_vars()
-  selectInput('y', 'Response', vars)
+  selectInput('y', 'Response', vars, selected = 'dead', 
+              selectize = TRUE)
 })
 
 output$total = renderUI({
   vars <- get_vars()
-  selectInput('total', 'Total (binomial data)', vars)
+  selectInput('total', 'Total (binomial data)', vars, selected = 'total')
 })
+
 observe({
   toggleState(id = "total", condition = input$type == 'binomial')
 })
@@ -46,6 +48,7 @@ get_pdata <- reactive({
 })
 
 
+# prepare data form plotting with ggplot
 prep_data <- reactive({
   df <- get_pdata()
   
@@ -54,12 +57,14 @@ prep_data <- reactive({
     newmin <- min(df[[input$conc]] + sort(unique(df[[input$conc]]))[2] / 10)
     df[df[[input$conc]] == 0, input$conc] <- newmin
   }
+  
   df
 })
 
 
 plot_raw <- reactive({
-  p <- ggplot(prep_data(), aes_string(x = input$conc, y =  'y_trans')) +
+  df <- get_pdata()
+  p <-  ggplot(df, aes_string(x = input$conc, y = 'y_trans')) +
     scale_x_log10() +
     theme_edi() +
     labs(y = 'Response', x = 'Concentration')
@@ -72,9 +77,20 @@ plot_raw <- reactive({
   p
 })
 
+build_plotly <- reactive({
+  df <- get_pdata()
+  
+  # manually control tooltips (remove conc onlog-scale, use raw scale)
+  p <- plotly_build(plot_raw())
+  p$x$data[[1]]$text <- paste("Concentration:", df[[input$conc]], "<br>",
+                              "Response:", round(df[['y_trans']], 2), "<br>")
+  
+  p
+})
+
 # Plot output -------------------------------------------------------------
 
 
-output$plot_settings <- renderPlot({
-  print(plot_raw())
+output$plot_settings <- renderPlotly({
+  print(build_plotly())
 })

@@ -75,6 +75,8 @@ model <- reactive({
   mod
 })
 
+
+# get model predictions
 get_pred <- reactive({
   df <- prep_data()
   
@@ -99,37 +101,62 @@ get_pred <- reactive({
   newdata$p <- pm[ , 1]
   newdata$pmin <- pm[ , 2]
   newdata$pmax <- pm[ , 3]
+  
   newdata
 })
 
 
 plot_model <- reactive({
-  p <- ggplot(prep_data(), aes_string(x = input$conc, y =  'y_trans')) +
-    scale_x_log10() +
-    theme_edi()
-  
+  df <- get_pdata()
   pdat <- get_pred()
-  
+
+  p <-  ggplot() +
+    scale_x_log10() +
+    theme_edi() +
+    labs(y = 'Response', x = 'Concentration')
+
   if (input$group != '__none__') {
-    p <- p + 
-      geom_point(aes_string(col = input$group)) +
-      geom_ribbon(data = pdat, aes_string(x = input$conc, y = 'p',
+    p <- p +
+      geom_point(data = df, aes_string(x = input$conc, y = 'y_trans', 
+                                       col = input$group)) +
+      geom_ribbon(data = pdat, aes_string(x = input$conc,
                                              ymin = 'pmin', ymax = 'pmax',
                                              fill = 'curveid'),
                   alpha = 0.2) +
       geom_line(data = pdat, aes_string(x = input$conc, y = 'p',
                                            col = 'curveid')) +
       guides(col = 'none')
-    
+
   } else {
-    p <- p + geom_point() +
-      geom_ribbon(data = pdat, aes_string(x = input$conc, y = 'p', 
-                                             ymin = 'pmin', ymax = 'pmax'), 
+    p <- p + geom_point(data = df, aes_string(x = input$conc, y = 'y_trans')) +
+      geom_ribbon(data = pdat, aes_string(x = input$conc,
+                                             ymin = 'pmin', ymax = 'pmax'),
                   alpha = 0.2) +
-      geom_line(data = pdat, aes_string(x = input$conc, y = 'p'))
+      geom_line(data = pdat, aes_string(x = input$conc, y = 'p'),
+                color = 'steelblue')
   }
   
   p
+})
+
+
+build_plotly2 <- reactive({
+  df <- get_pdata()
+  pdat <- get_pred()
+  p <- plot_model()
+  
+  pp <- plotly_build(p)
+  
+  # manually control tooltips (remove conc onlog-scale, use raw scale)
+  pp$x$data[[1]]$text <- paste("Concentration:", df[[input$conc]], "<br>",
+                              "Response:", round(df[['y_trans']], 2), "<br>")
+
+  pp$x$data[[2]]$text <- NULL # remove tooltip for CI
+  pp$x$data[[3]]$text <- paste("Concentration:", round(pdat[[input$conc]], 2), "<br>",
+                              "Upper CI:",  round(pdat[['pmax']], 2), "<br>",
+                              "Modeled Response:", round(pdat[['p']], 2), "<br>",
+                              "Lower CI:",  round(pdat[['pmin']], 2), "<br>")
+  pp
 })
 
 # get ECx -----------------------------------------------------------------
@@ -143,8 +170,8 @@ output$model_ecx <- renderPrint({
 
 # Plot --------------------------------------------------------------------
 
-output$model_plot <- renderPlot({
- print(plot_model())
+output$model_plot <- renderPlotly({
+ print(build_plotly2())
 })
 
 

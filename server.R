@@ -9,8 +9,8 @@ shinyServer(function(input, output, session) {
 })
 
 
-input <- NULL
-input$sample_data <- 'selenium'
-input$y <- 'dead'
-input$type <- 'binomial'
-input$total <- 'total'
+# input <- NULL
+# input$sample_data <- 'selenium'
+# input$y <- 'dead'
+# input$type <- 'binomial'
+# input$total <- 'total'

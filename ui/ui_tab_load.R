@@ -1,5 +1,5 @@
 tabPanel(
-  title = 'Load data',
+  title = '1. Load data',
   id = 'tab_load',
   value = 'tab_load',
   icon = icon('table'),
@@ -12,7 +12,7 @@ tabPanel(
       # read table
       fileInput(
         inputId = 'upload_data',
-        label = 'File',
+        label = 'Upload file',
         multiple = FALSE,
         accept = c(
           'text/csv',
@@ -30,7 +30,7 @@ tabPanel(
       
       # use example dataset
       , selectInput('sample_data',
-                  'Choose a dataset',
+                  'or choose an example dataset',
                   c(
                     'Selenium' = 'selenium',
                     'None' = 'none'))

@@ -4,7 +4,7 @@ library(shiny)
 library(drc)
 library(ggplot2)
 library(shinyjs)
-
+library(esmisc)
 
 
 # drc models --------------------------------------------------------------

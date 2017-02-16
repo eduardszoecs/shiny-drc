@@ -1,11 +1,12 @@
 tabPanel(
-  title = 'Settings',
+  title = '2. Settings',
   id = 'tab_settings',
   value = 'tab_settings',
   icon = icon('wrench'),
   
   sidebarLayout(
     sidebarPanel(
+      h3("Select columns"),
       uiOutput('conc'),
       uiOutput('y'),
       selectInput('type', 'Response type', 

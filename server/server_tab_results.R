@@ -75,6 +75,62 @@ model <- reactive({
   mod
 })
 
+get_pred <- reactive({
+  df <- prep_data()
+  
+  # new dose levels as support for the line
+  pconc <- exp(seq(log(min(df[[input$conc]] + sort(unique(df[[input$conc]]))[2] / 10)), 
+                   log(max(df[[input$conc]])), 
+                   length = 100))
+  
+  if (input$group != '__none__') {
+    newdata <- expand.grid(pconc ,
+                           unique(df[[input$group]]))
+    names(newdata) <- c(input$conc, 'curveid')
+    newdata[['curveid']] <- factor(newdata[['curveid']])
+  } else {
+    newdata <- expand.grid(pconc)
+    names(newdata) <- input$conc
+  }
+  
+  # predictions and confidence intervals
+  pm <- predict(model(), newdata = newdata, interval = "confidence")
+  # new data with predictions
+  newdata$p <- pm[ , 1]
+  newdata$pmin <- pm[ , 2]
+  newdata$pmax <- pm[ , 3]
+  newdata
+})
+
+
+plot_model <- reactive({
+  p <- ggplot(prep_data(), aes_string(x = input$conc, y =  'y_trans')) +
+    scale_x_log10() +
+    theme_edi()
+  
+  pdat <- get_pred()
+  
+  if (input$group != '__none__') {
+    p <- p + 
+      geom_point(aes_string(col = input$group)) +
+      geom_ribbon(data = pdat, aes_string(x = input$conc, y = 'p',
+                                             ymin = 'pmin', ymax = 'pmax',
+                                             fill = 'curveid'),
+                  alpha = 0.2) +
+      geom_line(data = pdat, aes_string(x = input$conc, y = 'p',
+                                           col = 'curveid')) +
+      guides(col = 'none')
+    
+  } else {
+    p <- p + geom_point() +
+      geom_ribbon(data = pdat, aes_string(x = input$conc, y = 'p', 
+                                             ymin = 'pmin', ymax = 'pmax'), 
+                  alpha = 0.2) +
+      geom_line(data = pdat, aes_string(x = input$conc, y = 'p'))
+  }
+  
+  p
+})
 
 # get ECx -----------------------------------------------------------------
 
@@ -88,58 +144,7 @@ output$model_ecx <- renderPrint({
 # Plot --------------------------------------------------------------------
 
 output$model_plot <- renderPlot({
-  df <- get_pdata()
-  
-  # shift 0 xvalues
-  if (min(df[[input$conc]]) == 0) {
-    newmin <- min(df[[input$conc]] + sort(unique(df[[input$conc]]))[2] / 10)
-    df[df[[input$conc]] == 0, input$conc] <- newmin
-  }
-  
-  # new dose levels as support for the line
-  pconc <- exp(seq(log(min(df[[input$conc]] + sort(unique(df[[input$conc]]))[2] / 10)), 
-                  log(max(df[[input$conc]])), 
-                  length = 100))
-  if (input$group != '__none__') {
-    newdata <- expand.grid(pconc ,
-                           unique(df[[input$group]]))
-    names(newdata) <- c(input$conc, 'curveid')
-    newdata[['curveid']] <- factor(newdata[['curveid']])
-  } else {
-    newdata <- expand.grid(pconc)
-    names(newdata) <- input$conc
-  }
-
-  # predictions and confidence intervals
-  pm <- predict(model(), newdata = newdata, interval = "confidence")
-  # new data with predictions
-  newdata$p <- pm[ , 1]
-  newdata$pmin <- pm[ , 2]
-  newdata$pmax <- pm[ , 3]
-  
-  p <- ggplot(df, aes_string(x = input$conc, y =  'y_trans')) +
-    scale_x_log10()
-  
-  if (input$group != '__none__') {
-    p <- p + 
-      geom_point(aes_string(col = input$group)) +
-      geom_ribbon(data = newdata, aes_string(x = input$conc, y = 'p',
-                                             ymin = 'pmin', ymax = 'pmax',
-                                             fill = 'curveid'),
-                  alpha = 0.2) +
-      geom_line(data = newdata, aes_string(x = input$conc, y = 'p',
-                                           col = 'curveid')) +
-      guides(col = 'none')
-    
-  } else {
-    p <- p + geom_point() +
-      geom_ribbon(data = newdata, aes_string(x = input$conc, y = 'p', 
-                                             ymin = 'pmin', ymax = 'pmax'), 
-                  alpha = 0.2) +
-      geom_line(data = newdata, aes_string(x = input$conc, y = 'p'))
-  }
-  
-  p
+ print(plot_model())
 })
 
 

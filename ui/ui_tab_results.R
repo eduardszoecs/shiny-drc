@@ -1,5 +1,5 @@
 tabPanel(
-  title = 'Model',
+  title = '3. Model',
   id = 'tab_results',
   value = 'tab_results',
   icon = icon('play'),

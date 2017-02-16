@@ -36,5 +36,5 @@ get_vars <- reactive({
 output$data_table <- renderDataTable({
   get_data()
   },
-  options = list(pageLength = 10)
+  options = list(pageLength = 10, searching = FALSE)
   )

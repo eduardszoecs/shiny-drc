@@ -2,10 +2,5 @@ tabPanel(
   title = 'ReadMe',
   id = 'tab_readme',
   value = 'tab_reademe',
-  icon = icon('info'),
-  tabsetPanel(
-    tabPanel(
-      title = 'README'
-    )
-  )
+  icon = icon('info')
 )

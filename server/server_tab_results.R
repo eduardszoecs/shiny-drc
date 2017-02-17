@@ -108,24 +108,27 @@ get_pred <- reactive({
 
 plot_model <- reactive({
   df <- get_pdata()
+  brks <- get_breaks(df[[input$conc]])
   pdat <- get_pred()
 
   p <-  ggplot() +
-    scale_x_log10() +
+    scale_x_log10(breaks = brks) +
     theme_edi() +
     labs(y = 'Response', x = 'Concentration')
 
   if (input$group != '__none__') {
     p <- p +
       geom_point(data = df, aes_string(x = input$conc, y = 'y_trans', 
-                                       col = input$group)) +
+                                       col = input$group,
+                                       show.legend = FALSE)) +
       geom_ribbon(data = pdat, aes_string(x = input$conc,
                                              ymin = 'pmin', ymax = 'pmax',
                                              fill = 'curveid'),
-                  alpha = 0.2) +
+                  alpha = 0.2, 
+                  show.legend = FALSE) +
       geom_line(data = pdat, aes_string(x = input$conc, y = 'p',
-                                           col = 'curveid')) +
-      guides(col = 'none')
+                                           col = 'curveid')
+                , show.legend = FALSE) 
 
   } else {
     p <- p + geom_point(data = df, aes_string(x = input$conc, y = 'y_trans')) +
@@ -143,29 +146,73 @@ plot_model <- reactive({
 build_plotly2 <- reactive({
   df <- get_pdata()
   pdat <- get_pred()
+  
   p <- plot_model()
   
   pp <- plotly_build(p)
   
-  # manually control tooltips (remove conc onlog-scale, use raw scale)
-  pp$x$data[[1]]$text <- paste("Concentration:", df[[input$conc]], "<br>",
-                              "Response:", round(df[['y_trans']], 2), "<br>")
+  if (input$group != '__none__') {
+    n_levs <- length(unique(df[[input$group]]))
+    levs <- unique(df[[input$group]])
+    # fix hoover for points
+    for (i in 1:n_levs) {
+      # pp$x$data[[i]]$text <- paste("Concentration:", df[[input$conc]][df[[input$group]] == levs[i]], "<br>",
+      #                              "Response:", round(df[['y_trans']][df[[input$group]] == levs[i]], 2), "<br>")
+      pp$x$data[[i]]$text <- NULL
+    }
+    for (i in n_levs+(1:n_levs)) {
+      pp$x$data[[i]]$text <- NULL
+    }
+    # fix hoover for lines
+    for (i in 2*n_levs+(1:n_levs)) {
+      pp$x$data[[i]]$text <- paste("Concentration:", round(pdat[[input$conc]][pdat[['curveid']] == i-2*n_levs], 2), "<br>",
+                                   "Upper CI:",  round(pdat[['pmax']][pdat[['curveid']] == i-2*n_levs], 2), "<br>",
+                                   "Modeled Response:", round(pdat[['p']][pdat[['curveid']] == i-2*n_levs], 2), "<br>",
+                                   "Lower CI:",  round(pdat[['pmin']][pdat[['curveid']] == i-2*n_levs], 2), "<br>")
+    }
+  } else {
+    # manually control tooltips (remove conc onlog-scale, use raw scale)
+    pp$x$data[[1]]$text <- paste("Concentration:", df[[input$conc]], "<br>",
+                                 "Response:", round(df[['y_trans']], 2), "<br>")
+    
+    pp$x$data[[2]]$text <- NULL # remove tooltip for CI
+    pp$x$data[[3]]$text <- paste("Concentration:", round(pdat[[input$conc]], 2), "<br>",
+                                 "Upper CI:",  round(pdat[['pmax']], 2), "<br>",
+                                 "Modeled Response:", round(pdat[['p']], 2), "<br>",
+                                 "Lower CI:",  round(pdat[['pmin']], 2), "<br>")
+  }
 
-  pp$x$data[[2]]$text <- NULL # remove tooltip for CI
-  pp$x$data[[3]]$text <- paste("Concentration:", round(pdat[[input$conc]], 2), "<br>",
-                              "Upper CI:",  round(pdat[['pmax']], 2), "<br>",
-                              "Modeled Response:", round(pdat[['p']], 2), "<br>",
-                              "Lower CI:",  round(pdat[['pmin']], 2), "<br>")
   pp
 })
 
+
+
 # get ECx -----------------------------------------------------------------
-
-
-output$model_ecx <- renderPrint({
+get_ecx <- reactive({
+  df <- get_pdata()
   ecx <- numextractall(input$ecx)
-  ED(model(), ecx, interval = 'delta')
+  eddf <- data.frame(ED(model(), ecx, 
+                        interval = 'delta', 
+                        type = input$type_resp,
+                        reference = input$reference))
+  
+  if (input$group != '__none__') {
+    eddf[['group']] = rep(unique(df[[input$group]]), each = length(ecx))
+    eddf[['ECx']] = rep(ecx, length(unique(input$group)))
+    eddf <- eddf[ , c('ECx', 'group', 'Estimate', 'Std..Error', 'Lower', 'Upper')]
+    names(eddf) <- c('ECx', 'Group', 'Estimate', 'Standard Error', 'Lower 95%CI', 'Upper 95%CI')
+  } else {
+    eddf[['ECx']] = ecx
+    eddf <- eddf[ , c('ECx', 'Estimate', 'Std..Error', 'Lower', 'Upper')]
+    names(eddf) <- c('ECx', 'Estimate', 'Standard Error', 'Lower 95%CI', 'Upper 95%CI')
+  }
+  eddf
 })
+
+output$model_ecx <- renderTable({
+  get_ecx()
+},
+digits = 3)
 
 
 # Plot --------------------------------------------------------------------
@@ -177,4 +224,12 @@ output$model_plot <- renderPlotly({
 
 output$model_summary <- renderPrint({
   summary(model())
+})
+
+output$debug <- renderPrint({
+  p <- plot_model()
+  pp <- plotly_build(p)
+  # str(pp$x$data)
+  sapply(pp$x$data, function(y) y$mode)
+  head(get_pred())
 })

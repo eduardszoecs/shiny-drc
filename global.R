@@ -23,3 +23,14 @@ numextractall <- function(string) {
   as.numeric(unlist(regmatches(string, gregexpr("[[:digit:]]+\\.*[[:digit:]]*", string)), 
                     use.names = FALSE))
 } 
+
+
+# Calc x-breaks -----------------------------------------------------------
+
+x <- 11:1001
+xmin <- min(x)
+xmax <- max(x)
+get_breaks <- function(x) {
+  10^(seq(floor(log10(xmin)), floor(log10(xmax))))
+}
+

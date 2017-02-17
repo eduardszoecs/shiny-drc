@@ -63,9 +63,12 @@ prep_data <- reactive({
 
 
 plot_raw <- reactive({
-  df <- get_pdata()
+  
+  df <- prep_data()
+  brks <- get_breaks(df[[input$conc]])
+  
   p <-  ggplot(df, aes_string(x = input$conc, y = 'y_trans')) +
-    scale_x_log10() +
+    scale_x_log10(breaks = brks) +
     theme_edi() +
     labs(y = 'Response', x = 'Concentration')
   

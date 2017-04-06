@@ -6,6 +6,7 @@ shinyServer(function(input, output, session) {
   source(file.path("server", "server_tab_load.R"), local = TRUE)$value
   source(file.path("server", "server_tab_settings.R"), local = TRUE)$value
   source(file.path("server", "server_tab_results.R"), local = TRUE)$value
+  # source(file.path("server", "server_tab_report.R"), local = TRUE)$value
 })
 
 

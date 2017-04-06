@@ -23,7 +23,7 @@ observe({
 output$group = renderUI({
   vars <- get_vars()
   vars <- c(None = '__none__', vars)
-  selectInput('group', 'Group (optional)', vars)
+  selectInput('group', 'Group (optional)', vars, selected = 'type')
 })
 
 
